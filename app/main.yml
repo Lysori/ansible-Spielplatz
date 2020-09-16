@@ -1,0 +1,40 @@
+---
+  - name: name of playbook
+    hosts: localhost
+    tasks:
+      - name: Build webserver image
+        docker_image:
+          name: webapp
+          pull: no
+          build:
+            path: .
+          source: build
+
+      - name: create docker network
+        docker_network:
+            name: helloWorld
+ 
+      - name: Create 4 helloworld container und add to network
+        docker_container:
+          name: "nginx{{ item }}"
+          image: webapp:latest
+          networks:
+            - name: helloWorld
+        with_sequence: count=4
+
+      - name: Build loadbalancer image
+        docker_image:
+          name: loadbalancer_nginx
+          pull: no
+          build:
+            path: /mnt/c/dev/ansible_HelloWorld/loadbalancer-config
+          source: build
+         
+      - name: Create loadbalancer
+        docker_container:
+            name: nginx-lb
+            image: loadbalancer_nginx:latest
+            ports:
+              - "80:80"
+            networks:
+              - name: helloWorld
